@@ -11,9 +11,11 @@ window.addEventListener('DOMContentLoaded', () => {
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Check if user is already logged in (redirects to dashboard if so)
-  await window.checkAuth();
+  const user = await window.checkAuth();
+  window.renderHeader(user);
 
   let isSignUp = false;
+
 
   const authTitle = document.getElementById('auth-title');
   const toggleAuthModeBtn = document.getElementById('toggle-auth-mode');
@@ -128,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
           showAlert('success', 'Sign up successful! Redirecting to dashboard...');
           setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            window.location.href = 'dashboard';
           }, 800);
         }
       } else {
@@ -142,7 +144,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         showAlert('success', 'Logging you in...');
         setTimeout(() => {
-          window.location.href = 'dashboard.html';
+          window.location.href = 'dashboard';
         }, 800);
       }
     } catch (err) {
@@ -158,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     clearAlert();
     googleLoginBtn.disabled = true;
     try {
-      const redirectUrl = window.location.origin + window.location.pathname.replace('login.html', 'dashboard.html');
+      const redirectUrl = window.location.origin + window.location.pathname.replace('login', 'dashboard');
       const { error } = await window.supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {

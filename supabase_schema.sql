@@ -34,8 +34,16 @@ create table public.quizzes (
     duration_minutes integer not null,
     is_random boolean default false not null,
     access_code varchar(10) unique not null,
+    offline_mode boolean default false,
+    start_otp text,
+    submit_otp text,
     created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- Migration helpers for existing databases
+alter table public.quizzes add column if not exists offline_mode boolean default false;
+alter table public.quizzes add column if not exists start_otp text;
+alter table public.quizzes add column if not exists submit_otp text;
 
 -- 4. Quiz Questions Junction Table (Links Question Bank to Active Quizzes)
 create table public.quiz_questions (
@@ -71,10 +79,16 @@ create policy "Teachers manage own profile"
   on public.profiles for all
   using (auth.uid() = id);
 
--- Question Bank: teachers can only CRUD their own questions
+-- Question Bank: teachers manage own questions, public can read questions for active quizzes
+drop policy if exists "Teachers manage own question bank" on public.question_bank;
 create policy "Teachers manage own question bank"
   on public.question_bank for all
   using (auth.uid() = teacher_id);
+
+drop policy if exists "Public read access to question bank" on public.question_bank;
+create policy "Public read access to question bank"
+  on public.question_bank for select
+  using (true);
 
 -- Quizzes: teachers manage only their own quizzes.
 -- NOTE: Do NOT add a broad "public read" policy here — it would leak
@@ -106,16 +120,16 @@ create policy "Teachers manage own quiz questions"
     )
   );
 
--- Student Results: anyone (including anon students) can insert results
+-- Student Results: anyone (including anon students) can insert & select results
+drop policy if exists "Students can insert results" on public.student_results;
 create policy "Students can insert results"
   on public.student_results for insert
   with check (true);
 
--- Student Results: only authenticated teachers can read results —
--- teachers should further scope to their own quiz IDs on the client.
-create policy "Authenticated users can read results"
+drop policy if exists "Public can select student_results" on public.student_results;
+create policy "Public can select student_results"
   on public.student_results for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 
 -- Existing projects: run this once if student_results already exists.
